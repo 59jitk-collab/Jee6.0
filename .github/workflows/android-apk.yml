@@ -8,25 +8,31 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
-      - name: Prepare Debug Keystore
+      - name: Prepare Debug Keystore & Output Fingerprint
         run: |
+          mkdir -p ~/.android
           if [ -f "debug.keystore.base64" ]; then
-            base64 --decode debug.keystore.base64 > debug.keystore
-          elif [ ! -f "debug.keystore" ]; then
+            echo "Loading permanent debug keystore from repository file..."
+            base64 --decode debug.keystore.base64 > ~/.android/debug.keystore
+          elif [ -n "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
+            echo "Loading permanent debug keystore from GitHub Secret..."
+            echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 --decode > ~/.android/debug.keystore
+          else
+            echo "Creating a new debug keystore..."
             keytool -genkeypair \
               -v \
-              -keystore debug.keystore \
+              -keystore ~/.android/debug.keystore \
               -storepass android \
               -alias androiddebugkey \
               -keypass android \
@@ -34,6 +40,20 @@ jobs:
               -keysize 2048 \
               -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+          # Copy to project root so both global and local Gradle configs can access it
+          cp ~/.android/debug.keystore ./debug.keystore
+
+          echo "==================== [COPY THIS SHA-1] ===================="
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep "SHA1:"
+          echo "============================================================"
+
+          if [ ! -f "debug.keystore.base64" ] && [ -z "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
+            echo "================ [COPY THIS BASE64 KEYSTORE] ================"
+            base64 -w 0 ~/.android/debug.keystore
+            echo ""
+            echo "============================================================="
           fi
 
       - name: Ensure Local .env Exists Without Secrets
@@ -57,22 +77,27 @@ jobs:
               echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > app/google-services.json
               echo "Wrote app/google-services.json from GOOGLE_SERVICES_JSON_BASE64 secret."
             else
-              echo "::warning::app/google-services.json is missing and neither GOOGLE_SERVICES_JSON nor GOOGLE_SERVICES_JSON_BASE64 secret is configured. APK will build in offline-only mode without Firebase Cloud Sync."
+              echo "::warning::app/google-services.json not found! Firebase Google Sign-In requires this file to work."
             fi
           else
             echo "Found existing app/google-services.json."
           fi
 
-      - name: Build debug APK
+      - name: Grant Execute Permission to Gradlew
         run: |
-          if [ -f gradlew ]; then
+          if [ -f "gradlew" ]; then
             chmod +x gradlew
-            ./gradlew --no-daemon assembleDebug
-          else
-            gradle --no-daemon assembleDebug
           fi
 
-      - name: Upload APK
+      - name: Build Debug APK
+        run: |
+          if [ -f "gradlew" ]; then
+            ./gradlew --no-daemon :app:assembleDebug --stacktrace
+          else
+            gradle --no-daemon :app:assembleDebug --stacktrace
+          fi
+
+      - name: Upload APK Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -80,3 +105,4 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 7
+          
