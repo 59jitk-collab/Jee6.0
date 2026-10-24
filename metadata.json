@@ -1,0 +1,6 @@
+{
+  "name": "JEE Study OS",
+  "description": "Distraction-free 80-day JEE backlog elimination command center with chapter trackers, dated scheduler, Sunday tests, mistake notebook, and Gemini AI study mentor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

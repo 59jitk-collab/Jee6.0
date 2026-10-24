@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Orbital ellipse ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#4F8CFF"
+        android:strokeWidth="2.5"
+        android:pathData="M 32,46 C 36,36 72,36 76,46 C 80,56 64,68 44,66 C 30,64 26,52 36,44" />
+    
+    <!-- Open Book / Study Wings base -->
+    <path
+        android:fillColor="#1E293B"
+        android:strokeColor="#334155"
+        android:strokeWidth="1.5"
+        android:pathData="M 30,68 C 42,65 52,69 54,72 C 56,69 66,65 78,68 L 78,54 C 66,51 56,55 54,58 C 52,55 42,51 30,54 Z" />
+
+    <!-- Open Book Pages (White and Cyan) -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M 32,65 C 42,62 51,66 53,68 L 53,55 C 51,53 42,49 32,52 Z" />
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M 76,65 C 66,62 57,66 55,68 L 55,55 C 57,53 66,49 76,52 Z" />
+
+    <!-- Mission Delta / Rocket Apex in Electric Blue & Emerald -->
+    <path
+        android:fillColor="#4F8CFF"
+        android:pathData="M 54,30 L 64,52 L 54,48 L 44,52 Z" />
+    <!-- Core Atomic Glow / Success Center -->
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M 54,44 A 4,4 0 1,1 53.99,44 Z" />
+    <!-- Target Star -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M 54,24 L 55.5,27.5 L 59,28 L 56.5,30.5 L 57,34 L 54,32 L 51,34 L 51.5,30.5 L 49,28 L 52.5,27.5 Z" />
+</vector>

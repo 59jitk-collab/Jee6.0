@@ -1,0 +1,384 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User study profile and cloud backup metadata for JEE Study OS.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the authenticated student."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Student display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Student Google account email."
+        },
+        "totalXp": {
+          "type": "integer",
+          "description": "Total private XP earned."
+        },
+        "currentLevel": {
+          "type": "integer",
+          "description": "Current study level."
+        },
+        "currentStreakDays": {
+          "type": "integer",
+          "description": "Current study streak in days."
+        },
+        "lastCloudSyncEpochMs": {
+          "type": "integer",
+          "description": "Client epoch milliseconds of the last cloud backup/sync."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "displayName", "createdAt", "updatedAt"]
+    },
+    "CloudChapter": {
+      "title": "CloudChapter",
+      "description": "Synchronized JEE syllabus chapter progress record preserving nullable totals.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "subject": {
+          "type": "string",
+          "description": "JEE subject or sub-discipline (Physics, Physical Chemistry, Organic Chemistry, Inorganic Chemistry, Mathematics)."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Curriculum unit name."
+        },
+        "chapterName": {
+          "type": "string",
+          "description": "Chapter title."
+        },
+        "totalLectures": {
+          "type": "integer",
+          "description": "Nullable total lectures (null or omitted means NOT_ASSESSED, e.g. Organic Chemistry)."
+        },
+        "completedLectures": {
+          "type": "integer",
+          "description": "Completed lecture count."
+        },
+        "notesDone": {
+          "type": "boolean",
+          "description": "Whether chapter notes are completed."
+        },
+        "dibyDone": {
+          "type": "integer",
+          "description": "Nullable DIBY completed count."
+        },
+        "dibyTotal": {
+          "type": "integer",
+          "description": "Nullable DIBY total count."
+        },
+        "classProblemsDone": {
+          "type": "integer",
+          "description": "Nullable class problems completed count."
+        },
+        "classProblemsTotal": {
+          "type": "integer",
+          "description": "Nullable class problems total count."
+        },
+        "dppDone": {
+          "type": "integer",
+          "description": "Nullable DPP completed count."
+        },
+        "dppTotal": {
+          "type": "integer",
+          "description": "Nullable DPP total count."
+        },
+        "pyqDone": {
+          "type": "integer",
+          "description": "Nullable PYQ completed count."
+        },
+        "pyqTotal": {
+          "type": "integer",
+          "description": "Nullable PYQ total count."
+        },
+        "worksheetsDone": {
+          "type": "integer",
+          "description": "Nullable worksheets completed count."
+        },
+        "worksheetsTotal": {
+          "type": "integer",
+          "description": "Nullable worksheets total count."
+        },
+        "masteryLevel": {
+          "type": "string",
+          "enum": ["NOT_STARTED", "NEEDS_REVISION", "PRACTICING", "STRONG"],
+          "description": "Chapter mastery state."
+        },
+        "isWeak": {
+          "type": "boolean",
+          "description": "Whether chapter is flagged as weak."
+        },
+        "isDeleted": {
+          "type": "boolean",
+          "description": "Tombstone flag for deleted chapters."
+        },
+        "clientUpdatedAt": {
+          "type": "integer",
+          "description": "Client mutation timestamp in epoch milliseconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "subject",
+        "unit",
+        "chapterName",
+        "completedLectures",
+        "notesDone",
+        "masteryLevel",
+        "isWeak",
+        "isDeleted",
+        "clientUpdatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudSchedule": {
+      "title": "CloudSchedule",
+      "description": "Synchronized 80-Day JEE daily schedule record.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "date": {
+          "type": "string",
+          "description": "ISO date YYYY-MM-DD."
+        },
+        "dayNumber": {
+          "type": "integer",
+          "description": "Day number in the 80-day mission (1..365)."
+        },
+        "focusSubjects": {
+          "type": "string",
+          "description": "Subjects scheduled for the day."
+        },
+        "assignedChapterNames": {
+          "type": "string",
+          "description": "Assigned chapters for the day."
+        },
+        "targetLectures": {
+          "type": "integer",
+          "description": "Target lectures for the day."
+        },
+        "completedLectures": {
+          "type": "integer",
+          "description": "Completed lectures for the day."
+        },
+        "targetProblems": {
+          "type": "integer",
+          "description": "Target problems for the day."
+        },
+        "completedProblems": {
+          "type": "integer",
+          "description": "Completed problems for the day."
+        },
+        "notesReviewed": {
+          "type": "boolean",
+          "description": "Whether daily notes review is complete."
+        },
+        "studyMinutes": {
+          "type": "integer",
+          "description": "Total study minutes logged for the day."
+        },
+        "breakMinutes": {
+          "type": "integer",
+          "description": "Total break minutes logged for the day."
+        },
+        "sleepHours": {
+          "type": "number",
+          "description": "Protected sleep hours."
+        },
+        "isSundayTest": {
+          "type": "boolean",
+          "description": "Whether day is a Sunday Mock Test day."
+        },
+        "isDeleted": {
+          "type": "boolean",
+          "description": "Tombstone flag."
+        },
+        "clientUpdatedAt": {
+          "type": "integer",
+          "description": "Client mutation timestamp in epoch milliseconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "date",
+        "dayNumber",
+        "focusSubjects",
+        "assignedChapterNames",
+        "targetLectures",
+        "completedLectures",
+        "targetProblems",
+        "completedProblems",
+        "notesReviewed",
+        "studyMinutes",
+        "breakMinutes",
+        "sleepHours",
+        "isSundayTest",
+        "isDeleted",
+        "clientUpdatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudMistake": {
+      "title": "CloudMistake",
+      "description": "Synchronized JEE Mistake Notebook entry.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "subject": {
+          "type": "string",
+          "description": "JEE subject."
+        },
+        "chapterName": {
+          "type": "string",
+          "description": "Associated chapter name."
+        },
+        "testName": {
+          "type": "string",
+          "description": "Source test or practice sheet name."
+        },
+        "questionSnippet": {
+          "type": "string",
+          "description": "Question summary or snippet."
+        },
+        "errorType": {
+          "type": "string",
+          "description": "Error category (Conceptual, Calculation, Silly, Time, Formula)."
+        },
+        "conceptMissed": {
+          "type": "string",
+          "description": "Specific concept missed."
+        },
+        "correctTakeaway": {
+          "type": "string",
+          "description": "Key takeaway to avoid repeating the mistake."
+        },
+        "lessonLearned": {
+          "type": "string",
+          "description": "Actionable lesson learned."
+        },
+        "solutionNotes": {
+          "type": "string",
+          "description": "Step-by-step solution notes."
+        },
+        "reviewCount": {
+          "type": "integer",
+          "description": "Number of times reviewed."
+        },
+        "isResolved": {
+          "type": "boolean",
+          "description": "Whether mistake has been mastered/resolved."
+        },
+        "isDeleted": {
+          "type": "boolean",
+          "description": "Tombstone flag."
+        },
+        "clientUpdatedAt": {
+          "type": "integer",
+          "description": "Client mutation timestamp in epoch milliseconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "subject",
+        "chapterName",
+        "testName",
+        "questionSnippet",
+        "errorType",
+        "conceptMissed",
+        "correctTakeaway",
+        "lessonLearned",
+        "solutionNotes",
+        "reviewCount",
+        "isResolved",
+        "isDeleted",
+        "clientUpdatedAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private student profile and cloud backup summary."
+    },
+    "/users/{userId}/chapters/{chapterId}": {
+      "schema": {
+        "$ref": "#/entities/CloudChapter"
+      },
+      "description": "User-scoped JEE syllabus chapters preserving nullable totals."
+    },
+    "/users/{userId}/schedules/{scheduleId}": {
+      "schema": {
+        "$ref": "#/entities/CloudSchedule"
+      },
+      "description": "User-scoped 80-Day JEE study schedule records."
+    },
+    "/users/{userId}/mistakes/{mistakeId}": {
+      "schema": {
+        "$ref": "#/entities/CloudMistake"
+      },
+      "description": "User-scoped Mistake Notebook entries."
+    }
+  }
+}

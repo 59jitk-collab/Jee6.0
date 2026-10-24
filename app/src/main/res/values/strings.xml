@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">JEE Study OS</string>
+    <string name="focus_guard_accessibility_description">JEE Study OS Focus Guard detects when a user-selected distracting application is opened during an active study session and brings you back to your focus timer. It never reads screen text, passwords, or personal messages, and only operates while a focus session is actively running.</string>
+</resources>

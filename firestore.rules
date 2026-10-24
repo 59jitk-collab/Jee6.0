@@ -1,0 +1,346 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isOptionalBoundedInt(data, field, minVal, maxVal) {
+      return !(field in data) || data[field] == null || (data[field] is int && data[field] >= minVal && data[field] <= maxVal);
+    }
+
+    // 1. UserProfile Validation Blueprint
+    function isValidUserProfile(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             data.displayName is string &&
+             data.displayName.size() >= 1 &&
+             data.displayName.size() <= 120 &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 254)) &&
+             (!('totalXp' in data) || (data.totalXp is int && data.totalXp >= 0 && data.totalXp <= 10000000)) &&
+             (!('currentLevel' in data) || (data.currentLevel is int && data.currentLevel >= 1 && data.currentLevel <= 1000)) &&
+             (!('currentStreakDays' in data) || (data.currentStreakDays is int && data.currentStreakDays >= 0 && data.currentStreakDays <= 3650)) &&
+             (!('lastCloudSyncEpochMs' in data) || (data.lastCloudSyncEpochMs is int && data.lastCloudSyncEpochMs >= 0)) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    // 2. CloudChapter Validation Blueprint (Preserves nullable JEE Organic Chemistry totals)
+    function isValidCloudChapter(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             data.subject is string &&
+             data.subject.size() >= 1 &&
+             data.subject.size() <= 80 &&
+             data.unit is string &&
+             data.unit.size() <= 120 &&
+             data.chapterName is string &&
+             data.chapterName.size() >= 1 &&
+             data.chapterName.size() <= 160 &&
+             isOptionalBoundedInt(data, 'totalLectures', 0, 500) &&
+             data.completedLectures is int &&
+             data.completedLectures >= 0 &&
+             data.completedLectures <= 500 &&
+             data.notesDone is bool &&
+             isOptionalBoundedInt(data, 'dibyDone', 0, 2000) &&
+             isOptionalBoundedInt(data, 'dibyTotal', 0, 2000) &&
+             isOptionalBoundedInt(data, 'classProblemsDone', 0, 5000) &&
+             isOptionalBoundedInt(data, 'classProblemsTotal', 0, 5000) &&
+             isOptionalBoundedInt(data, 'dppDone', 0, 2000) &&
+             isOptionalBoundedInt(data, 'dppTotal', 0, 2000) &&
+             isOptionalBoundedInt(data, 'pyqDone', 0, 5000) &&
+             isOptionalBoundedInt(data, 'pyqTotal', 0, 5000) &&
+             isOptionalBoundedInt(data, 'worksheetsDone', 0, 1000) &&
+             isOptionalBoundedInt(data, 'worksheetsTotal', 0, 1000) &&
+             data.masteryLevel is string &&
+             data.masteryLevel.size() <= 32 &&
+             data.masteryLevel in ['NOT_ASSESSED', 'NOT_STARTED', 'LEARNING', 'NEEDS_REVISION', 'PRACTICING', 'CONFIDENT', 'STRONG'] &&
+             data.isWeak is bool &&
+             data.isDeleted is bool &&
+             data.clientUpdatedAt is int &&
+             data.clientUpdatedAt >= 0 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    // 3. CloudSchedule Validation Blueprint
+    function isValidCloudSchedule(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             data.date is string &&
+             data.date.size() == 10 &&
+             data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+             data.dayNumber is int &&
+             data.dayNumber >= 1 &&
+             data.dayNumber <= 365 &&
+             data.focusSubjects is string &&
+             data.focusSubjects.size() <= 300 &&
+             data.assignedChapterNames is string &&
+             data.assignedChapterNames.size() <= 1000 &&
+             data.targetLectures is int &&
+             data.targetLectures >= 0 &&
+             data.targetLectures <= 50 &&
+             data.completedLectures is int &&
+             data.completedLectures >= 0 &&
+             data.completedLectures <= 50 &&
+             data.targetProblems is int &&
+             data.targetProblems >= 0 &&
+             data.targetProblems <= 1000 &&
+             data.completedProblems is int &&
+             data.completedProblems >= 0 &&
+             data.completedProblems <= 1000 &&
+             data.notesReviewed is bool &&
+             data.studyMinutes is int &&
+             data.studyMinutes >= 0 &&
+             data.studyMinutes <= 1440 &&
+             data.breakMinutes is int &&
+             data.breakMinutes >= 0 &&
+             data.breakMinutes <= 1440 &&
+             (data.sleepHours is int || data.sleepHours is float) &&
+             data.sleepHours >= 0 &&
+             data.sleepHours <= 24 &&
+             data.isSundayTest is bool &&
+             data.isDeleted is bool &&
+             data.clientUpdatedAt is int &&
+             data.clientUpdatedAt >= 0 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    // 4. CloudMistake Validation Blueprint
+    function isValidCloudMistake(data, userId) {
+      return data.userId is string &&
+             data.userId.size() >= 1 &&
+             data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.userId == userId &&
+             data.subject is string &&
+             data.subject.size() >= 1 &&
+             data.subject.size() <= 80 &&
+             data.chapterName is string &&
+             data.chapterName.size() >= 1 &&
+             data.chapterName.size() <= 160 &&
+             data.testName is string &&
+             data.testName.size() <= 160 &&
+             data.questionSnippet is string &&
+             data.questionSnippet.size() >= 1 &&
+             data.questionSnippet.size() <= 2000 &&
+             data.errorType is string &&
+             data.errorType.size() >= 1 &&
+             data.errorType.size() <= 80 &&
+             data.conceptMissed is string &&
+             data.conceptMissed.size() <= 1000 &&
+             data.correctTakeaway is string &&
+             data.correctTakeaway.size() <= 1000 &&
+             data.lessonLearned is string &&
+             data.lessonLearned.size() <= 1000 &&
+             data.solutionNotes is string &&
+             data.solutionNotes.size() <= 2000 &&
+             data.reviewCount is int &&
+             data.reviewCount >= 0 &&
+             data.reviewCount <= 1000 &&
+             data.isResolved is bool &&
+             data.isDeleted is bool &&
+             data.clientUpdatedAt is int &&
+             data.clientUpdatedAt >= 0 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId) && isValidId(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'email', 'totalXp',
+                         'currentLevel', 'currentStreakDays', 'lastCloudSyncEpochMs',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'email', 'totalXp',
+                         'currentLevel', 'currentStreakDays', 'lastCloudSyncEpochMs',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection 2: /users/{userId}/chapters/{chapterId}
+      match /chapters/{chapterId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(chapterId);
+        allow list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(chapterId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'subject', 'unit', 'chapterName',
+                           'completedLectures', 'notesDone', 'masteryLevel',
+                           'isWeak', 'isDeleted', 'clientUpdatedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'subject', 'unit', 'chapterName',
+                           'totalLectures', 'completedLectures', 'notesDone',
+                           'dibyDone', 'dibyTotal', 'classProblemsDone', 'classProblemsTotal',
+                           'dppDone', 'dppTotal', 'pyqDone', 'pyqTotal',
+                           'worksheetsDone', 'worksheetsTotal', 'masteryLevel',
+                           'isWeak', 'isDeleted', 'clientUpdatedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().createdAt <= request.time &&
+                         isValidCloudChapter(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(chapterId) &&
+                         isValidCloudChapter(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'subject', 'unit', 'chapterName',
+                           'totalLectures', 'completedLectures', 'notesDone',
+                           'dibyDone', 'dibyTotal', 'classProblemsDone', 'classProblemsTotal',
+                           'dppDone', 'dppTotal', 'pyqDone', 'pyqTotal',
+                           'worksheetsDone', 'worksheetsTotal', 'masteryLevel',
+                           'isWeak', 'isDeleted', 'clientUpdatedAt', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(chapterId);
+      }
+
+      // Subcollection 3: /users/{userId}/schedules/{scheduleId}
+      match /schedules/{scheduleId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(scheduleId);
+        allow list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(scheduleId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'date', 'dayNumber', 'focusSubjects',
+                           'assignedChapterNames', 'targetLectures', 'completedLectures',
+                           'targetProblems', 'completedProblems', 'notesReviewed',
+                           'studyMinutes', 'breakMinutes', 'sleepHours',
+                           'isSundayTest', 'isDeleted', 'clientUpdatedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'date', 'dayNumber', 'focusSubjects',
+                           'assignedChapterNames', 'targetLectures', 'completedLectures',
+                           'targetProblems', 'completedProblems', 'notesReviewed',
+                           'studyMinutes', 'breakMinutes', 'sleepHours',
+                           'isSundayTest', 'isDeleted', 'clientUpdatedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().createdAt <= request.time &&
+                         isValidCloudSchedule(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(scheduleId) &&
+                         isValidCloudSchedule(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'date', 'dayNumber', 'focusSubjects',
+                           'assignedChapterNames', 'targetLectures', 'completedLectures',
+                           'targetProblems', 'completedProblems', 'notesReviewed',
+                           'studyMinutes', 'breakMinutes', 'sleepHours',
+                           'isSundayTest', 'isDeleted', 'clientUpdatedAt', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(scheduleId);
+      }
+
+      // Subcollection 4: /users/{userId}/mistakes/{mistakeId}
+      match /mistakes/{mistakeId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(mistakeId);
+        allow list: if isOwner(userId) && isValidId(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(mistakeId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'subject', 'chapterName', 'testName',
+                           'questionSnippet', 'errorType', 'conceptMissed',
+                           'correctTakeaway', 'lessonLearned', 'solutionNotes',
+                           'reviewCount', 'isResolved', 'isDeleted', 'clientUpdatedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'subject', 'chapterName', 'testName',
+                           'questionSnippet', 'errorType', 'conceptMissed',
+                           'correctTakeaway', 'lessonLearned', 'solutionNotes',
+                           'reviewCount', 'isResolved', 'isDeleted', 'clientUpdatedAt',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().createdAt <= request.time &&
+                         isValidCloudMistake(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(mistakeId) &&
+                         isValidCloudMistake(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'subject', 'chapterName', 'testName',
+                           'questionSnippet', 'errorType', 'conceptMissed',
+                           'correctTakeaway', 'lessonLearned', 'solutionNotes',
+                           'reviewCount', 'isResolved', 'isDeleted', 'clientUpdatedAt',
+                           'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(mistakeId);
+      }
+    }
+  }
+}
