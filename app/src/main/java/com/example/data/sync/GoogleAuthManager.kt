@@ -164,11 +164,13 @@ class GoogleAuthManager(
             onFailure = { err ->
                 val msg = err.message ?: "Google Play Services Authorization error"
                 val isConfigIssue = msg.contains("10:") ||
+                        msg.contains("8:") ||
+                        msg.contains("UNREGISTERED_ON_API_CONSOLE", ignoreCase = true) ||
                         msg.contains("DEVELOPER_ERROR", ignoreCase = true) ||
                         msg.contains("28444") ||
                         msg.contains("SIGN_IN_REQUIRED", ignoreCase = true)
                 val actionableMsg = if (isConfigIssue) {
-                    "OAuth Android Client configuration required in Google Cloud Console for package '${appContext.packageName}' (Project: gen-lang-client-0470121053). You can also authorize with an OAuth Access Token below."
+                    "Google OAuth Authorization requires Android Client registration for '${appContext.packageName}' in Google Cloud Console (Project: gen-lang-client-0470121053) with SHA-1 DD:18:EA:47:B7:50:41:B5:8B:B5:90:CB:CC:4C:BC:D0:F5:E0:0F:F9, Google Sheets API enabled, and your email added as an OAuth Test User. You can also authorize with an OAuth Access Token below."
                 } else {
                     "Google OAuth failed: $msg"
                 }
@@ -195,7 +197,17 @@ class GoogleAuthManager(
                 AuthorizationOutcome.Authorized(verified)
             }
         } catch (e: Exception) {
-            AuthorizationOutcome.Failed("Authorization consent failed: ${e.message}")
+            val msg = e.message ?: "Unknown consent failure"
+            val isConfigIssue = msg.contains("8:") ||
+                    msg.contains("10:") ||
+                    msg.contains("UNREGISTERED_ON_API_CONSOLE", ignoreCase = true) ||
+                    msg.contains("DEVELOPER_ERROR", ignoreCase = true)
+            val actionableMsg = if (isConfigIssue) {
+                "Authorization consent failed: UNREGISTERED_ON_API_CONSOLE. Package '${appContext.packageName}' or SHA-1 is not registered in Google Cloud Console (Project: gen-lang-client-0470121053), or your Google account is not added as a Test User under OAuth consent screen. You can also authorize with an OAuth Access Token below."
+            } else {
+                "Authorization consent failed: $msg"
+            }
+            AuthorizationOutcome.Failed(actionableMsg, isConfigurationIssue = isConfigIssue)
         }
     }
 

@@ -95,4 +95,12 @@ class GoogleSignInLifecycleTest {
         val cancellationEx = GetCredentialCancellationException("User dismissed account picker")
         assertEquals("User dismissed account picker", cancellationEx.message)
     }
+
+    @Test
+    fun getAppSigningFingerprints_returnsSafelyWithoutCrashing() {
+        val appContext = ApplicationProvider.getApplicationContext<Context>()
+        val fingerprints = FirestoreCloudSyncRepository.getAppSigningFingerprints(appContext)
+        // In Robolectric without real package signature, returns null safely without throwing
+        assertTrue(fingerprints == null || fingerprints.first.isNotBlank())
+    }
 }

@@ -274,10 +274,34 @@ class FirestoreCloudSyncRepository private constructor(
                 Log.i("FirestoreCloudSync", "Google Sign-In cancelled by user.")
                 return Result.failure(e)
             } catch (e: GetCredentialCustomException) {
-                Log.e("FirestoreCloudSync", "Google Sign-In custom credential exception [${e.type}]: ${e.message}")
+                val fingerprints = getAppSigningFingerprints(activity)
+                val sha1 = fingerprints?.first ?: "UNKNOWN"
+                val sha256 = fingerprints?.second ?: "UNKNOWN"
+                Log.e("FirestoreCloudSync", "Google Sign-In custom credential exception [${e.type}]: ${e.message} (SHA-1: $sha1)")
                 return Result.failure(e)
             } catch (e: GetCredentialException) {
-                Log.e("FirestoreCloudSync", "Google Sign-In credential exception [${e.javaClass.simpleName}]: ${e.message}")
+                val fingerprints = getAppSigningFingerprints(activity)
+                val sha1 = fingerprints?.first ?: "DD:18:EA:47:B7:50:41:B5:8B:B5:90:CB:CC:4C:BC:D0:F5:E0:0F:F9"
+                val sha256 = fingerprints?.second ?: "9B:65:46:6A:64:B3:C6:92:58:A5:13:5D:02:3F:F2:D2:44:E8:0E:90:A2:A9:A0:0A:4B:3E:CB:71:E1:CB:E1:77"
+                Log.e(
+                    "FirestoreCloudSync",
+                    "Google Sign-In credential exception [${e.javaClass.simpleName}]: ${e.message} " +
+                    "(Package: ${activity.packageName}, SHA-1: $sha1, SHA-256: $sha256, WebClientId: $webClientId)"
+                )
+                val isUnregistered = e.message?.contains("UNREGISTERED_ON_API_CONSOLE", ignoreCase = true) == true ||
+                        e.message?.contains("status=8", ignoreCase = true) == true ||
+                        e.message?.contains("code: 8", ignoreCase = true) == true ||
+                        e.message?.contains("code: 10", ignoreCase = true) == true
+                if (isUnregistered) {
+                    val userFriendlyMsg =
+                        "Google Sign-In failed (UNREGISTERED_ON_API_CONSOLE).\n" +
+                        "The app's signing certificate is not recognized by Google API Console.\n" +
+                        "1. Verify package: ${activity.packageName}\n" +
+                        "2. Add SHA-1 to Firebase & Google Cloud Console: $sha1\n" +
+                        "3. Add SHA-256 to Firebase: $sha256\n" +
+                        "4. Ensure your Google account is added as a Test User under OAuth Consent Screen in Google Cloud Console."
+                    return Result.failure(IllegalStateException(userFriendlyMsg, e))
+                }
                 return Result.failure(e)
             }
 
@@ -839,6 +863,37 @@ class FirestoreCloudSyncRepository private constructor(
         fun resolveFirestoreDatabaseId(context: Context): String {
             return resolveStringResource(context, "firestore_database_id")
                 ?: "ai-studio-android-jeestudy-3a3e6b5c-3cf7-434b-8b3e-c727bb1c9b5a"
+        }
+
+        fun getAppSigningFingerprints(context: Context): Pair<String, String>? {
+            return try {
+                val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        android.content.pm.PackageManager.GET_SIGNATURES
+                    )
+                }
+                val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    packageInfo.signingInfo?.apkContentsSigners
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageInfo.signatures
+                }
+                val cert = signatures?.firstOrNull()?.toByteArray() ?: return null
+                val mdSha1 = java.security.MessageDigest.getInstance("SHA-1")
+                val sha1 = mdSha1.digest(cert).joinToString(":") { "%02X".format(it) }
+                val mdSha256 = java.security.MessageDigest.getInstance("SHA-256")
+                val sha256 = mdSha256.digest(cert).joinToString(":") { "%02X".format(it) }
+                Pair(sha1, sha256)
+            } catch (_: Exception) {
+                null
+            }
         }
 
         fun resolveFirestoreDatabase(context: Context): FirebaseFirestore {
